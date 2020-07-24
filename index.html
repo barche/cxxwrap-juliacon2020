@@ -1,0 +1,324 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>reveal.js</title>
+
+  <link rel="stylesheet" href="dist/reset.css">
+  <link rel="stylesheet" href="dist/reveal.css">
+  <link rel="stylesheet" href="dist/theme/black.css" id="theme">
+
+  <!-- Theme used for syntax highlighted code -->
+  <link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+</head>
+
+<body>
+  <div class="reveal">
+    <style>
+      .reveal section pre code {
+        font-size: 1em !important;
+        line-height: normal !important;
+      }
+      .container {
+        display: flex;
+      }
+      .col {
+        flex: 1;
+      }
+    </style>
+    <div class="slides">
+      <section>
+        <h1>CxxWrap.jl</h1>
+        <p>Wrapping a C++ library using CxxWrap.jl</p>
+      </section>
+      <section>
+        <h2>Get your system ready</h2>
+        <ul>
+          <li>These steps can take a while, real intro follows</li>
+          <li>Install docker: <a href="https://docs.docker.com/get-docker/">https://docs.docker.com/get-docker/</a></li>
+          <li>Install vscode: <a href="https://code.visualstudio.com">https://code.visualstudio.com</a></li>
+          <li>Launch vscode and install the <pre><code class="text">ms-vscode-remote.remote-containers</code></pre> extension (just enter this id in the extension searchbox and click install)</li>
+          <li>Use the "Open repository in container" command to open <a href="https://github.com/barche/libfoo">https://github.com/barche/libfoo</a></li>
+        </ul>
+      </section>
+      <section>
+        <section><h2>Introduction</h2></section>
+        <section>
+          <h3>What is CxxWrap?</h3>
+          <ul>
+            <li>Package for using C++ libraries in Julia</li>
+            <li>Library-based approach</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Workshop objectives</h3>
+          <ol>
+            <li>What does it take to enable <pre><code>add MyGreatCppPackage</code></pre></li>
+            <li class="fragment">How do you wrap:
+            <ul>
+              <li>Functions</li>
+              <li>Classes</li>
+              <li>Parametric (template) types</li>
+              <li>Smart pointers</li>
+              <li>STL containers</li>
+              <li>Enum types</li>
+              <li>...</li>
+            </ul>
+            </li>
+          </ol>
+        </section>
+      </section>
+      <section>
+        <section><h2>Libfoo A-Z</h2></section>
+        <section>
+          <h3>Project outline</h3>
+          <ol>
+            <li>JLL package: depends on libcxxwrap-julia</li>
+            <li>Julia package: uses the JLL package and CxxWrap</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Building the JLL package</h3>
+          <ol>
+            <li>Build a library that links to libcxxwrap-julia</li>
+            <ul>
+            <li>Write CMakeLists.txt</li>
+            <li>Write wrapping function</li>
+            </ul>
+            <li>Generate the JLL using BinaryBuilder:
+            <pre><code data-trim class="bash">
+              julia --color=yes libfoo/build_tarballs.jl --debug --verbose x86_64-linux-gnu
+              julia --color=yes build_tarballs.jl --verbose --meta-json x86_64-linux-gnu > foo.json
+              julia build_jll.jl foo.json
+            </code></pre>
+            </li>
+
+            <li>Set up override for local development</li>
+            <li>Test</li>
+            <li>(publish the JLL)</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Building the Julia package</h3>
+          <ol>
+            <li>Generate a normal Julia package</li>
+            <li>Add CxxWrap and JLL as dependencies</li>
+            <li>Load the library</li>
+            <li>Extend from the Julia side as needed</li>
+          </ol>
+        </section>
+        <section>
+        <h3>Workflow conclusions</h3>
+        <ul>
+          <li>Good integration with BinaryBuilder workflow
+          <ul>
+          <li>Could use better "local jll" support</li>
+          <li>Julia JLL is not complete yet</li>
+          </ul>
+          </li>
+          <li>Docker devcontainer + vscode is fairly painless</li>
+          <li>Fully native setup is possible too
+          <ul>
+          <li>Use distro or Julia or build from source</li>
+          <li>Build libcxxwrap from source and set override file</li>
+          </ul>
+          </li>
+        </ul>
+        </section>
+      </section>
+      <section>
+        <section><h2>Eigen, step by step</h2></section>
+        <section>
+        <h3>What is Eigen?</h3>
+        <ul>
+          <li>C++ Matrix library, focused on small matrices</li>
+          <li>Uses many tricky C++ features</li>
+          <li>There is a JLL already!</li>
+          <li>Documentation: <a href="http://eigen.tuxfamily.org/dox/GettingStarted.html">http://eigen.tuxfamily.org/dox/GettingStarted.html</a></li>
+        </ul>
+        </section>
+        <section>
+        <h3>Setting up</h3>
+        <ol>
+        <li>Directory with a .devcontainer with <a href="">these files</a>.</li>
+        <li>Copy over CMakeLists.txt and foo.cpp as templates</a>.</li>
+        <li>Open in vscode and edit the names</li>
+        </ol>
+        </section>
+        <section><h3>Adding a type</h3></section>
+        <section>
+          <pre><code class="c++" data-trim>
+            #include &lt;jlcxx/jlcxx.hpp&gt;
+            #include &lt;jlcxx/stl.hpp&gt;
+
+            #include &lt;Eigen/Dense&gt;
+
+
+            JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
+            {
+              mod.add_type&lt;Eigen::MatrixXd&gt;("MatrixXd");
+            }
+          </code></pre>
+        </section>
+        <section>
+          <pre><code class="julia" data-trim>
+            module Eigen
+
+            using CxxWrap
+
+            @wrapmodule "/workspaces/eigen-wrapper/build/lib/libjleigen"
+
+            function __init__()
+              @initcxx
+            end
+
+            export MatrixXd
+
+            end # module
+
+          </code></pre>
+        </section>
+        <section>
+          <h3>Adding some methods</h3>
+          <pre><code class="c++" data-trim>
+            .method("cols", &Eigen::MatrixXd::cols)
+            .method("rows", &Eigen::MatrixXd::rows)
+            .method("norm", &Eigen::MatrixXd::norm)
+          </code></pre>
+        </section>
+        <section>
+          <h3>Adding a constructor</h3>
+          <pre><code class="c++" data-trim>
+            .constructor&lt;int64_t, int64_t&gt;()
+          </code></pre>
+        </section>
+        <section>
+          <h3>Let's add another one</h3>
+          <pre><code class="c++" data-trim>
+            // fails
+            .method("setConstant", &Eigen::MatrixXd::setConstant);
+          </code></pre>
+          <pre class="fragment"><code class="c++" data-trim>
+            // Cast
+            .method("setConstant", static_cast&lt;Eigen::MatrixXd& (Eigen::MatrixXd::*)(const double&)&gt;(&Eigen::MatrixXd::setConstant));
+          </code></pre>
+          <pre class="fragment"><code class="c++" data-trim>
+            // Or use a lambda
+            .method("setConstant", [](Eigen::MatrixXd& m, double x) { return m.setConstant(x); });
+          </code></pre>
+        </section>
+        <section>
+          <h3>Adding methods to Base from C++</h3>
+          <pre><code class="c++" data-trim>
+          mod.set_override_module(jl_base_module);
+          mod.method("getindex", [](const Eigen::MatrixXd& m, int_t i, int_t j) { return m(i-1,j-1); });
+          mod.method("setindex!", [](Eigen::MatrixXd& m, double value, int_t i, int_t j) { m(i-1,j-1) = value; });
+          mod.unset_override_module();
+
+          mod.method("toString", [] (const Eigen::MatrixXd& m)
+          {
+            std::stringstream stream;
+            stream << m;
+            return stream.str();
+          });
+          </code></pre>
+        </section>
+        <section>
+          <h3>Setting a base type</h3>
+          <pre><code class="c++" data-trim>
+            mod.add_type&lt;Eigen::MatrixXd&gt;("MatrixXd", jlcxx::julia_type("AbstractMatrixXd"))
+          </code></pre>
+          <pre class="fragment"><code class="julia" data-trim>
+            const AbstractMatrixXd = AbstractMatrix{Float64}
+          </code></pre>
+          <pre class="fragment"><code class="julia" data-trim>
+            # Complete the interface
+            Base.size(m::MatrixXd) = (rows(m),cols(m))
+            Base.IndexStyle(::Type{<:MatrixXd})=IndexCartesian()
+          </code></pre>
+        </section>
+        <section>
+        <h3>Templates</h3>
+        <pre><code class="c++" data-trim data-line-numbers>
+          namespace jleigen
+          {
+            struct WrapMatrix
+            {
+              template&lt;typename TypeWrapperT&gt;
+              void operator()(TypeWrapperT&& wrapped)
+              {
+                using WrappedT = typename TypeWrapperT::type;
+                using ScalarT = typename WrappedT::Scalar;
+                wrapped.template constructor&lt;Eigen::Index, Eigen::Index&gt;();
+                wrapped.method("cols", &WrappedT::cols);
+                wrapped.method("rows", &WrappedT::rows);
+                wrapped.method("norm", &WrappedT::norm);
+                wrapped.method("setConstant", static_cast&lt;WrappedT& (WrappedT::*)(const ScalarT&)&gt;(&WrappedT::setConstant));
+
+                wrapped.module().set_override_module(jl_base_module);
+                wrapped.module().method("getindex", [](const WrappedT& m, int_t i, int_t j) { return m(i-1,j-1); });
+                wrapped.module().method("setindex!", [](WrappedT& m, ScalarT value, int_t i, int_t j) { m(i-1,j-1) = value; });
+                wrapped.module().unset_override_module();
+
+                wrapped.module().method("toString", [] (const WrappedT& m)
+                {
+                  std::stringstream stream;
+                  stream &lt;&lt; m;
+                  return stream.str();
+                });
+              }
+            };
+          }
+
+          namespace jlcxx
+          {
+
+          template&lt;typename T&gt;
+          struct BuildParameterList&lt;Eigen::Matrix&lt;T, Eigen::Dynamic, Eigen::Dynamic&gt;&gt;
+          {
+            typedef ParameterList&lt;T&gt; type;
+          };
+
+          }
+
+
+          JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
+          {
+            using jlcxx::Parametric;
+            using jlcxx::TypeVar;
+            mod.add_type&lt;Parametric&lt;TypeVar&lt;1&gt;&gt;&gt;("Matrix", jlcxx::julia_type("AbstractMatrix"))
+              .apply&lt;Eigen::Matrix&lt;double, Eigen::Dynamic, Eigen::Dynamic&gt;, Eigen::Matrix&lt;float, Eigen::Dynamic, Eigen::Dynamic&gt;&gt;(jleigen::WrapMatrix());
+          }
+
+        </code></pre>
+        </section>
+        <section><h3>Smart pointers</h3></section>
+        <section><h3>Inheritance</h3></section>
+        <section><h3>Enum types</h3></section>
+        <section><h3>Mapping structs</h3></section>
+      </section>
+      <section><h2>Questions?</h2></section>
+    </div>
+  </div>
+
+  <script src="dist/reveal.js"></script>
+  <script src="plugin/notes/notes.js"></script>
+  <script src="plugin/markdown/markdown.js"></script>
+  <script src="plugin/highlight/highlight.js"></script>
+  <script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+      hash: true,
+
+      // Learn about plugins: https://revealjs.com/plugins/
+      plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+
+</html>
