@@ -8,12 +8,10 @@ The recommended method for new users is to use Docker. If you already have a C++
 
 ### Docker dev container
 
-<ul>
-  <li>Install docker: <a href="https://docs.docker.com/get-docker/">https://docs.docker.com/get-docker/</a></li>
-  <li>Install vscode: <a href="https://code.visualstudio.com">https://code.visualstudio.com</a></li>
-  <li>Launch vscode and install the <pre><code class="text">ms-vscode-remote.remote-containers</code></pre> extension (just enter this id in the extension searchbox and click install)</li>
-  <li>Use the "Open repository in container" command to open <a href="https://github.com/barche/libfoo.git">https://github.com/barche/libfoo.git</a></li>
-</ul>
+* Install docker: https://docs.docker.com/get-docker/
+* Install vscode: https://code.visualstudio.com
+* Launch vscode and install the `ms-vscode-remote.remote-containers` extension (just enter this id in the extension searchbox and click install)
+* Use the "Open repository in container" command to open https://github.com/barche/libfoo.git . **Note: This can take several minutes, it downloads a 2.7 GB docker image that includes some BinaryBuilder compiler shards** 
 
 ### Manual setup
 #### Basic toolkit
