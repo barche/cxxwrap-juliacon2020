@@ -295,10 +295,110 @@
 
         </code></pre>
         </section>
-        <section><h3>Smart pointers</h3></section>
-        <section><h3>Inheritance</h3></section>
-        <section><h3>Enum types</h3></section>
-        <section><h3>Mapping structs</h3></section>
+        <section>
+          <h3>Enum types and constants</h3>
+          <pre><code class="c++" data-trim>
+            mod.set_const("Dynamic", int_t(Eigen::Dynamic));
+  
+            mod.add_bits&lt;Eigen::StorageOptions&gt;("StorageOptions", jlcxx::julia_type("CppEnum"));
+            mod.set_const("ColMajor", Eigen::ColMajor);
+            mod.set_const("RowMajor", Eigen::RowMajor);
+          </code></pre>
+        </section>
+        <section>
+          <h3>Templates, completed</h3>
+          <pre><code class="c++" data-trim>
+            struct ApplyMatrix
+            {
+              template&lt;typename T, typename Rows, typename Cols, typename Storage&gt; using apply = Eigen::Matrix&lt;T, Rows::value, Cols::value, Storage::value&gt;;
+            };
+
+            template&lt;typename T, int NRows, int NCols, int S&gt;
+              struct BuildParameterList&lt;Eigen::Matrix&lt;T, NRows, NCols, S&gt;&gt;
+              {
+                using type = ParameterList&lt;T, std::integral_constant&lt;int_t, NRows&gt;, std::integral_constant&lt;int_t, NCols&gt;, std::integral_constant&lt;Eigen::StorageOptions, Eigen::StorageOptions(S)&gt;&gt;;
+              };
+              
+              }
+              
+              
+              JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
+              {
+                mod.set_const("Dynamic", int_t(Eigen::Dynamic));
+                
+                mod.add_bits&lt;Eigen::StorageOptions&gt;("StorageOptions", jlcxx::julia_type("CppEnum"));
+                mod.set_const("ColMajor", Eigen::ColMajor);
+                mod.set_const("RowMajor", Eigen::RowMajor);
+              
+                using jlcxx::Parametric;
+                using jlcxx::TypeVar;
+                using jlcxx::ParameterList;
+              
+                using scalar_types = ParameterList&lt;float, double&gt;;
+                using sizes = ParameterList&lt;std::integral_constant&lt;int, 2&gt;, std::integral_constant&lt;int, 4&gt;, std::integral_constant&lt;int, Eigen::Dynamic&gt;&gt;;
+                using storage = ParameterList&lt;std::integral_constant&lt;int, Eigen::ColMajor&gt;, std::integral_constant&lt;int, Eigen::RowMajor&gt;&gt;;
+              
+                mod.add_type&lt;Parametric&lt;TypeVar&lt;1&gt;, TypeVar&lt;2&gt;, TypeVar&lt;3&gt;, TypeVar&lt;4&gt;&gt;&gt;("Matrix", jlcxx::julia_type("AbstractEigenMatrix"))
+                  .apply_combination&lt;jleigen::ApplyMatrix, scalar_types, sizes, sizes, storage&gt;(jleigen::WrapMatrix());
+              }
+          </code></pre>
+        </section>
+        <section>
+          <h3>Inheritance</h3>
+        <pre><code class="c++" data-trim>
+          class ExtendedMatrix : public Eigen::Matrix&lt;double,4,4&gt;
+            {
+            public:
+                using base_t = Eigen::Matrix&lt;double,4,4&gt;;
+                ExtendedMatrix() : base_t() { setConstant(1.0); }
+            
+                // This constructor allows you to construct ExtendedMatrix from Eigen expressions
+                template&lt;typename OtherDerived&gt;
+                ExtendedMatrix(const Eigen::MatrixBase&lt;OtherDerived&gt;& other)
+                    : base_t(other)
+                { }
+            
+                // This method allows you to assign Eigen expressions to ExtendedMatrix
+                template&lt;typename OtherDerived&gt;
+                ExtendedMatrix& operator=(const Eigen::MatrixBase &lt;OtherDerived&gt;& other)
+                {
+                    this-&gt;base_t::operator=(other);
+                    return *this;
+                }
+            };
+
+          namespace jlcxx
+          {
+          
+          template&lt;&gt; struct SuperType&lt;jleigen::ExtendedMatrix&gt; { using type = Eigen::Matrix&lt;double,4,4&gt;; };
+          
+          }
+
+          mod.add_type&lt;jleigen::ExtendedMatrix&gt;("ExtendedMatrix", jlcxx::julia_base_type&lt;Eigen::Matrix&lt;double,4,4&gt;&gt;());
+        </code></pre>
+        </section>
+        <section>
+          <h3>Smart pointers</h3>
+          <pre><code class="c++" data-trim>
+            #include &lt;jlcxx/smart_pointers.hpp&gt;
+            mod.method("make_shared", [] ()
+            {
+              return std::make_shared&lt;Eigen::MatrixXd&gt;(3,3);
+            });
+          </code></pre>
+        </section>
+        <section>
+          <h3>Standard vector</h3>
+          <pre><code class="c++" data-trim>
+            mod.method("processvec", [] (const std::vector&lt;Eigen::MatrixXd&gt;& v)
+            {
+              for(auto val : v)
+              {
+                std::cout &lt;&lt; val &lt;&lt; std::endl;
+              }
+            });
+          </code></pre>
+        </section>
       </section>
       <section><h2>Questions?</h2></section>
     </div>
