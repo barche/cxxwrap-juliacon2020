@@ -28,5 +28,4 @@ Follow the instructions at the https://github.com/JuliaInterop/libcxxwrap-julia 
 
 ## Tutorial
 
-1. Simple "libfoo" hello world style tutorial
-2. More elaborate wrapping of Eigen (based on a to be updated version of the files at https://github.com/barche/cppnow2018-julia)
+Use the slides at https://barche.github.io/cxxwrap-juliacon2020/ to follow along during the workshop, for clickable links and code snippets.
